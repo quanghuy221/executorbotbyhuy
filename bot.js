@@ -10,7 +10,7 @@ http.createServer((req, res) => {
 });
 
 // --- THÔNG TIN BOT CỦA HUY ---
-const TOKEN = process.env.TOKEN; // Tự động lấy Token từ Render Environment
+const TOKEN = process.env.TOKEN;
 const CLIENT_ID = '1534889412125786174'; 
 const API_URL = 'https://api.npoint.io/9d78b91f5a0f7c9f5ec8';
 
@@ -24,8 +24,16 @@ const commands = [
         .setDescription('Cập nhật trạng thái Executor trên Website')
         .addStringOption(option => 
             option.setName('name')
-                .setDescription('Tên executor (Ví dụ: potassium, wave...)')
-                .setRequired(true))
+                .setDescription('Chọn tên Executor')
+                .setRequired(true)
+                .addChoices(
+                    { name: 'Potassium', value: 'potassium' },
+                    { name: 'Wave', value: 'wave' },
+                    { name: 'Banana Cat Hub', value: 'banana cat hub' },
+                    { name: 'Maru Hub', value: 'maru hub' },
+                    { name: 'Delta', value: 'delta' },
+                    { name: 'Codex', value: 'codex' }
+                ))
         .addStringOption(option => 
             option.setName('state')
                 .setDescription('Trạng thái mới')
@@ -44,7 +52,7 @@ client.once('ready', async () => {
     console.log(`=> Bot executorbotbyhuy đã online thành công: ${client.user.tag}`);
     try {
         await rest.put(Routes.applicationCommands(CLIENT_ID), { body: commands });
-        console.log('=> Đã đăng ký lệnh /status thành công!');
+        console.log('=> Đã cập nhật lại menu chọn cho /status!');
     } catch (error) {
         console.error(error);
     }
