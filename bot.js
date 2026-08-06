@@ -24,15 +24,32 @@ const commands = [
         .setDescription('Cập nhật trạng thái Executor trên Website')
         .addStringOption(option => 
             option.setName('name')
-                .setDescription('Chọn tên Executor')
+                .setDescription('Chọn tên Executor trên Website')
                 .setRequired(true)
                 .addChoices(
+                    { name: 'Nexomia', value: 'nexomia' },
                     { name: 'Potassium', value: 'potassium' },
+                    { name: 'Volt', value: 'volt' },
                     { name: 'Wave', value: 'wave' },
-                    { name: 'Banana Cat Hub', value: 'banana cat hub' },
-                    { name: 'Maru Hub', value: 'maru hub' },
-                    { name: 'Delta', value: 'delta' },
-                    { name: 'Codex', value: 'codex' }
+                    { name: 'Ronix', value: 'ronix' },
+                    { name: 'Synapse Z', value: 'synapse z' },
+                    { name: 'Seliware', value: 'seliware' },
+                    { name: 'Madium V2', value: 'madium v2' },
+                    { name: 'Cosmic', value: 'cosmic' },
+                    { name: 'Velocity', value: 'velocity' },
+                    { name: 'SirHurt', value: 'sirhurt' },
+                    { name: 'Xeno', value: 'xeno' },
+                    { name: 'Solara', value: 'solara' },
+                    { name: 'TDT', value: 'tdt' },
+                    { name: 'Sapphire', value: 'sapphire' },
+                    { name: 'Real', value: 'real' },
+                    { name: 'Vortex', value: 'vortex' },
+                    { name: 'Opiumware', value: 'opiumware' },
+                    { name: 'MacSploit', value: 'macsploit' },
+                    { name: 'Delta (Android)', value: 'delta_android' },
+                    { name: 'Codex', value: 'codex' },
+                    { name: 'Vega X', value: 'vega x' },
+                    { name: 'Delta (iOS)', value: 'delta_ios' }
                 ))
         .addStringOption(option => 
             option.setName('state')
@@ -52,7 +69,7 @@ client.once('ready', async () => {
     console.log(`=> Bot executorbotbyhuy đã online thành công: ${client.user.tag}`);
     try {
         await rest.put(Routes.applicationCommands(CLIENT_ID), { body: commands });
-        console.log('=> Đã cập nhật lại menu chọn cho /status!');
+        console.log('=> Đã cập nhật đúng chuẩn 23 tên Executor trên npoint!');
     } catch (error) {
         console.error(error);
     }
@@ -62,7 +79,7 @@ client.on('interactionCreate', async interaction => {
     if (!interaction.isChatInputCommand()) return;
 
     if (interaction.commandName === 'status') {
-        const targetName = interaction.options.getString('name').trim().toLowerCase();
+        const rawChoice = interaction.options.getString('name');
         const newState = interaction.options.getString('state');
 
         await interaction.deferReply();
@@ -72,8 +89,8 @@ client.on('interactionCreate', async interaction => {
             const data = await res.json();
 
             let itemsList = [];
-            let siteTitle = "Roblox Executors Status";
-            let siteSubtitle = "Trạng thái cập nhật liên tục";
+            let siteTitle = "Executors Status By Huy";
+            let siteSubtitle = "...";
 
             if (Array.isArray(data)) {
                 itemsList = data;
@@ -84,16 +101,40 @@ client.on('interactionCreate', async interaction => {
             }
 
             let found = false;
+            let displayTargetName = rawChoice;
+
             for (let item of itemsList) {
-                if (item.name.trim().toLowerCase() === targetName) {
-                    item.status = newState;
-                    found = true;
-                    break;
+                const itemNameLower = item.name.trim().toLowerCase();
+                const itemPlatLower = (item.plat || '').trim().toLowerCase();
+
+                // Xử lý riêng cho Delta Android & Delta iOS
+                if (rawChoice === 'delta_android') {
+                    displayTargetName = 'Delta (Android)';
+                    if (itemNameLower === 'delta' && itemPlatLower === 'android') {
+                        item.status = newState;
+                        found = true;
+                        break;
+                    }
+                } else if (rawChoice === 'delta_ios') {
+                    displayTargetName = 'Delta (iOS)';
+                    if (itemNameLower === 'delta' && itemPlatLower === 'ios') {
+                        item.status = newState;
+                        found = true;
+                        break;
+                    }
+                } else {
+                    // Các Executor khác
+                    if (itemNameLower === rawChoice.trim().toLowerCase()) {
+                        displayTargetName = item.name;
+                        item.status = newState;
+                        found = true;
+                        break;
+                    }
                 }
             }
 
             if (!found) {
-                await interaction.editReply(`❌ Không tìm thấy Executor **"${targetName}"** trên website!`);
+                await interaction.editReply(`❌ Không tìm thấy Executor **"${displayTargetName}"** trên website!`);
                 return;
             }
 
@@ -110,9 +151,9 @@ client.on('interactionCreate', async interaction => {
             });
 
             if (updateRes.ok) {
-                await interaction.editReply(`✅ Cập nhật thành công! **${targetName}** -> **${newState}** (Web & Admin đã tự đổi).`);
+                await interaction.editReply(`✅ Cập nhật thành công! **${displayTargetName}** -> **${newState}** (Web & Admin đã tự đổi).`);
             } else {
-                await interaction.editReply(`⚠️ Lỗi khi lưu dữ liệu lên hệ thống.`);
+                await interaction.editReply(`⚠️ Lỗi khi lưu dữ liệu lên hệ thống npoint.`);
             }
 
         } catch (err) {
