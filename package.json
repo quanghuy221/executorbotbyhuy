@@ -1,0 +1,9 @@
+{
+  "name": "executorbotbyhuy",
+  "version": "1.0.0",
+  "main": "bot.js",
+  "dependencies": {
+    "discord.js": "^14.14.1",
+    "node-fetch": "^2.7.0"
+  }
+}
