@@ -27,6 +27,7 @@ const commands = [
                 .setDescription('Chọn tên Executor trên Website')
                 .setRequired(true)
                 .addChoices(
+                    { name: 'Yub X', value: 'yub x' },
                     { name: 'Nexomia', value: 'nexomia' },
                     { name: 'Potassium', value: 'potassium' },
                     { name: 'Volt', value: 'volt' },
