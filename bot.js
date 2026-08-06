@@ -1,16 +1,16 @@
 const { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder } = require('discord.js');
 const http = require('http');
 
-// --- TẠO CỔNG WEB GIẢ ĐỂ RENDER CHẠY FREE 24/7 ---
+// --- CỔNG WEB GIẢ ĐỂ RENDER CHẠY 24/7 FREE ---
 http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/plain' });
     res.end('Bot Online 24/7');
 }).listen(process.env.PORT || 3000, () => {
-    console.log('Web server gia da khoi chay thành cong!');
+    console.log('Web server gia da khoi chay thanh cong!');
 });
 
 // --- THÔNG TIN BOT CỦA HUY ---
-const TOKEN = 'MTUzNDg4OTQxMjEyNTc4NjE3NA.GKtqa8.tt15jSkVAGfrabadnEVSIBg-CIf7taQ8oJv9aE'; 
+const TOKEN = process.env.TOKEN; // Tự động lấy Token từ Render Environment
 const CLIENT_ID = '1534889412125786174'; 
 const API_URL = 'https://api.npoint.io/9d78b91f5a0f7c9f5ec8';
 
