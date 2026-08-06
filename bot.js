@@ -151,7 +151,7 @@ client.on('interactionCreate', async interaction => {
             });
 
             if (updateRes.ok) {
-                await interaction.editReply(`✅ Cập nhật thành công! **${displayTargetName}** -> **${newState}** (By QHuy Đẹp Trai).`);
+                await interaction.editReply(`✅ Cập nhật thành công! **${displayTargetName}** -> **${newState}** (By Admin Siêu Đẹp Trai).`);
             } else {
                 await interaction.editReply(`⚠️ Lỗi khi lưu dữ liệu lên hệ thống npoint.`);
             }
