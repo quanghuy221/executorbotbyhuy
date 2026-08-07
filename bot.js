@@ -64,7 +64,7 @@ const commands = [
                     { name: 'OUTDATED', value: 'OUTDATED' }
                 )),
 
-    // Lệnh 2: Thêm Executor Mới (Đầy đủ chức năng giống Web Admin)
+    // Lệnh 2: Thêm Executor Mới
     new SlashCommandBuilder()
         .setName('add')
         .setDescription('Thêm Executor mới vào Website')
@@ -105,7 +105,26 @@ const commands = [
                 .setDescription('Ghi chú thêm (Mặc định: -)')
                 .setRequired(false)),
 
-    // Lệnh 3: Đổi Tiêu Đề Chính (H1)
+    // Lệnh 3: Xoá Executor
+    new SlashCommandBuilder()
+        .setName('delete')
+        .setDescription('Xoá Executor khỏi Website')
+        .addStringOption(option =>
+            option.setName('name')
+                .setDescription('Nhập tên Executor cần xoá')
+                .setRequired(true))
+        .addStringOption(option =>
+            option.setName('plat')
+                .setDescription('Chọn Nền Tảng (Không bắt buộc, dùng để phân biệt nếu trùng tên)')
+                .setRequired(false)
+                .addChoices(
+                    { name: 'Windows', value: 'Windows' },
+                    { name: 'Android', value: 'Android' },
+                    { name: 'iOS', value: 'iOS' },
+                    { name: 'Mac', value: 'Mac' }
+                )),
+
+    // Lệnh 4: Đổi Tiêu Đề Chính (H1)
     new SlashCommandBuilder()
         .setName('settitle')
         .setDescription('Đổi Tiêu Đề Chính (H1) trên Website')
@@ -114,7 +133,7 @@ const commands = [
                 .setDescription('Nhập tiêu đề mới (H1)')
                 .setRequired(true)),
 
-    // Lệnh 4: Đổi Dòng Mô Tả Phụ (Subtitle)
+    // Lệnh 5: Đổi Dòng Mô Tả Phụ (Subtitle)
     new SlashCommandBuilder()
         .setName('setsubtitle')
         .setDescription('Đổi Dòng Mô Tả Phụ (Subtitle) trên Website')
@@ -130,7 +149,7 @@ client.once('ready', async () => {
     console.log(`=> Bot executorbotbyhuy đã online thành công: ${client.user.tag}`);
     try {
         await rest.put(Routes.applicationCommands(CLIENT_ID), { body: commands });
-        console.log('=> Đã cập nhật xong tất cả các lệnh (/status, /add, /settitle, /setsubtitle)!');
+        console.log('=> Đã cập nhật xong tất cả các lệnh (/status, /add, /delete, /settitle, /setsubtitle)!');
     } catch (error) {
         console.error(error);
     }
@@ -298,6 +317,73 @@ client.on('interactionCreate', async interaction => {
                 );
             } else {
                 await interaction.editReply(`⚠️ Lỗi khi lưu dữ liệu mới lên API!`);
+            }
+
+        } catch (err) {
+            console.error(err);
+            await interaction.editReply(`❌ Lỗi kết nối cơ sở dữ liệu!`);
+        }
+    }
+
+    // --- XỬ LÝ LỆNH /delete (XOÁ EXECUTOR) ---
+    if (commandName === 'delete') {
+        const inputName = interaction.options.getString('name').trim();
+        const inputPlat = interaction.options.getString('plat');
+
+        await interaction.deferReply();
+
+        try {
+            const res = await fetch(API_URL);
+            const data = await res.json();
+
+            let itemsList = [];
+            let siteTitle = "Executors Status By Huy";
+            let siteSubtitle = "...";
+
+            if (Array.isArray(data)) {
+                itemsList = data;
+            } else if (data && typeof data === 'object') {
+                siteTitle = data.title || siteTitle;
+                siteSubtitle = data.subtitle || siteSubtitle;
+                itemsList = Array.isArray(data.items) ? data.items : [];
+            }
+
+            const initialLength = itemsList.length;
+
+            // Lọc và loại bỏ Executor khớp tên (và khớp nền tảng nếu có chọn plat)
+            itemsList = itemsList.filter(item => {
+                const nameMatch = item.name.trim().toLowerCase() === inputName.toLowerCase();
+                if (!nameMatch) return true; // Giữ lại nếu khác tên
+
+                if (inputPlat) {
+                    const platMatch = (item.plat || '').trim().toLowerCase() === inputPlat.toLowerCase();
+                    return !platMatch; // Nếu khớp cả tên lẫn plat -> Xoá (trả về false)
+                }
+
+                return false; // Nếu không chỉ định plat mà khớp tên -> Xoá
+            });
+
+            if (itemsList.length === initialLength) {
+                await interaction.editReply(`❌ Không tìm thấy Executor **"${inputName}"** ${inputPlat ? `trên nền tảng **${inputPlat}**` : ''} để xoá!`);
+                return;
+            }
+
+            const payload = {
+                title: siteTitle,
+                subtitle: siteSubtitle,
+                items: itemsList
+            };
+
+            const updateRes = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (updateRes.ok) {
+                await interaction.editReply(`🗑️ Đã xoá thành công Executor **"${inputName}"** ${inputPlat ? `(${inputPlat})` : ''} khỏi hệ thống!`);
+            } else {
+                await interaction.editReply(`⚠️ Lỗi khi cập nhật dữ liệu sau khi xoá trên API!`);
             }
 
         } catch (err) {
