@@ -124,7 +124,62 @@ const commands = [
                     { name: 'Mac', value: 'Mac' }
                 )),
 
-    // Lệnh 4: Đổi Tiêu Đề Chính (H1)
+    // Lệnh 4: Chỉnh sửa thông tin Executor
+    new SlashCommandBuilder()
+        .setName('change')
+        .setDescription('Sửa thông tin Executor đã có trên Website')
+        .addStringOption(option =>
+            option.setName('target_name')
+                .setDescription('Tên Executor muốn sửa')
+                .setRequired(true))
+        .addStringOption(option =>
+            option.setName('target_plat')
+                .setDescription('Nền tảng hiện tại (Dùng để tìm đúng Executor nếu trùng tên)')
+                .setRequired(false)
+                .addChoices(
+                    { name: 'Windows', value: 'Windows' },
+                    { name: 'Android', value: 'Android' },
+                    { name: 'iOS', value: 'iOS' },
+                    { name: 'Mac', value: 'Mac' }
+                ))
+        .addStringOption(option =>
+            option.setName('new_name')
+                .setDescription('Đổi thành tên mới')
+                .setRequired(false))
+        .addStringOption(option =>
+            option.setName('plat')
+                .setDescription('Đổi nền tảng mới')
+                .setRequired(false)
+                .addChoices(
+                    { name: 'Windows', value: 'Windows' },
+                    { name: 'Android', value: 'Android' },
+                    { name: 'iOS', value: 'iOS' },
+                    { name: 'Mac', value: 'Mac' }
+                ))
+        .addStringOption(option =>
+            option.setName('state')
+                .setDescription('Đổi trạng thái mới')
+                .setRequired(false)
+                .addChoices(
+                    { name: 'WORKING', value: 'WORKING' },
+                    { name: 'PATCHED', value: 'PATCHED' },
+                    { name: 'UNSTABLE', value: 'UNSTABLE' },
+                    { name: 'OUTDATED', value: 'OUTDATED' }
+                ))
+        .addStringOption(option =>
+            option.setName('price')
+                .setDescription('Đổi giá tiền mới')
+                .setRequired(false))
+        .addStringOption(option =>
+            option.setName('time')
+                .setDescription('Đổi thời gian cập nhật mới')
+                .setRequired(false))
+        .addStringOption(option =>
+            option.setName('note')
+                .setDescription('Đổi ghi chú mới')
+                .setRequired(false)),
+
+    // Lệnh 5: Đổi Tiêu Đề Chính (H1)
     new SlashCommandBuilder()
         .setName('settitle')
         .setDescription('Đổi Tiêu Đề Chính (H1) trên Website')
@@ -133,7 +188,7 @@ const commands = [
                 .setDescription('Nhập tiêu đề mới (H1)')
                 .setRequired(true)),
 
-    // Lệnh 5: Đổi Dòng Mô Tả Phụ (Subtitle)
+    // Lệnh 6: Đổi Dòng Mô Tả Phụ (Subtitle)
     new SlashCommandBuilder()
         .setName('setsubtitle')
         .setDescription('Đổi Dòng Mô Tả Phụ (Subtitle) trên Website')
@@ -149,7 +204,7 @@ client.once('ready', async () => {
     console.log(`=> Bot executorbotbyhuy đã online thành công: ${client.user.tag}`);
     try {
         await rest.put(Routes.applicationCommands(CLIENT_ID), { body: commands });
-        console.log('=> Đã cập nhật xong tất cả các lệnh (/status, /add, /delete, /settitle, /setsubtitle)!');
+        console.log('=> Đã cập nhật xong tất cả các lệnh (/status, /add, /delete, /change, /settitle, /setsubtitle)!');
     } catch (error) {
         console.error(error);
     }
@@ -270,7 +325,6 @@ client.on('interactionCreate', async interaction => {
                 itemsList = Array.isArray(data.items) ? data.items : [];
             }
 
-            // Kiểm tra xem đã tồn tại Executor cùng tên & nền tảng chưa
             const existingIndex = itemsList.findIndex(item => 
                 item.name.toLowerCase() === inputName.toLowerCase() && 
                 (item.plat || '').toLowerCase() === inputPlat.toLowerCase()
@@ -286,10 +340,8 @@ client.on('interactionCreate', async interaction => {
             };
 
             if (existingIndex !== -1) {
-                // Nếu đã có thì cập nhật đè
                 itemsList[existingIndex] = newItem;
             } else {
-                // Nếu chưa có thì thêm mới vào danh sách
                 itemsList.push(newItem);
             }
 
@@ -350,17 +402,16 @@ client.on('interactionCreate', async interaction => {
 
             const initialLength = itemsList.length;
 
-            // Lọc và loại bỏ Executor khớp tên (và khớp nền tảng nếu có chọn plat)
             itemsList = itemsList.filter(item => {
                 const nameMatch = item.name.trim().toLowerCase() === inputName.toLowerCase();
-                if (!nameMatch) return true; // Giữ lại nếu khác tên
+                if (!nameMatch) return true;
 
                 if (inputPlat) {
                     const platMatch = (item.plat || '').trim().toLowerCase() === inputPlat.toLowerCase();
-                    return !platMatch; // Nếu khớp cả tên lẫn plat -> Xoá (trả về false)
+                    return !platMatch;
                 }
 
-                return false; // Nếu không chỉ định plat mà khớp tên -> Xoá
+                return false;
             });
 
             if (itemsList.length === initialLength) {
@@ -384,6 +435,93 @@ client.on('interactionCreate', async interaction => {
                 await interaction.editReply(`🗑️ Đã xoá thành công Executor **"${inputName}"** ${inputPlat ? `(${inputPlat})` : ''} khỏi hệ thống!`);
             } else {
                 await interaction.editReply(`⚠️ Lỗi khi cập nhật dữ liệu sau khi xoá trên API!`);
+            }
+
+        } catch (err) {
+            console.error(err);
+            await interaction.editReply(`❌ Lỗi kết nối cơ sở dữ liệu!`);
+        }
+    }
+
+    // --- XỬ LÝ LỆNH /change (SỬA THÔNG TIN EXECUTOR) ---
+    if (commandName === 'change') {
+        const targetName = interaction.options.getString('target_name').trim();
+        const targetPlat = interaction.options.getString('target_plat');
+
+        const newName = interaction.options.getString('new_name');
+        const newPlat = interaction.options.getString('plat');
+        const newState = interaction.options.getString('state');
+        const newPrice = interaction.options.getString('price');
+        const newTime = interaction.options.getString('time');
+        const newNote = interaction.options.getString('note');
+
+        await interaction.deferReply();
+
+        try {
+            const res = await fetch(API_URL);
+            const data = await res.json();
+
+            let itemsList = [];
+            let siteTitle = "Executors Status By Huy";
+            let siteSubtitle = "...";
+
+            if (Array.isArray(data)) {
+                itemsList = data;
+            } else if (data && typeof data === 'object') {
+                siteTitle = data.title || siteTitle;
+                siteSubtitle = data.subtitle || siteSubtitle;
+                itemsList = Array.isArray(data.items) ? data.items : [];
+            }
+
+            // Tìm vị trí của Executor cần sửa
+            const targetIndex = itemsList.findIndex(item => {
+                const nameMatch = item.name.trim().toLowerCase() === targetName.toLowerCase();
+                if (!nameMatch) return false;
+                if (targetPlat) {
+                    return (item.plat || '').trim().toLowerCase() === targetPlat.toLowerCase();
+                }
+                return true;
+            });
+
+            if (targetIndex === -1) {
+                await interaction.editReply(`❌ Không tìm thấy Executor **"${targetName}"** ${targetPlat ? `trên nền tảng **${targetPlat}**` : ''} để chỉnh sửa!`);
+                return;
+            }
+
+            // Chỉ thay đổi thông tin những ô có nhập liệu
+            if (newName) itemsList[targetIndex].name = newName.trim();
+            if (newPlat) itemsList[targetIndex].plat = newPlat;
+            if (newState) itemsList[targetIndex].status = newState;
+            if (newPrice) itemsList[targetIndex].price = newPrice;
+            if (newTime) itemsList[targetIndex].time = newTime;
+            if (newNote) itemsList[targetIndex].note = newNote;
+
+            const updatedItem = itemsList[targetIndex];
+
+            const payload = {
+                title: siteTitle,
+                subtitle: siteSubtitle,
+                items: itemsList
+            };
+
+            const updateRes = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (updateRes.ok) {
+                await interaction.editReply(
+                    `📝 **Sửa thông tin Executor thành công!**\n` +
+                    `• **Tên:** ${updatedItem.name}\n` +
+                    `• **Nền tảng:** ${updatedItem.plat}\n` +
+                    `• **Trạng thái:** ${updatedItem.status}\n` +
+                    `• **Giá:** ${updatedItem.price}\n` +
+                    `• **Cập nhật:** ${updatedItem.time}\n` +
+                    `• **Ghi chú:** ${updatedItem.note}`
+                );
+            } else {
+                await interaction.editReply(`⚠️ Lỗi khi lưu dữ liệu chỉnh sửa lên API!`);
             }
 
         } catch (err) {
