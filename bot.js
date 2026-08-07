@@ -19,6 +19,7 @@ const client = new Client({
 });
 
 const commands = [
+    // Lệnh 1: Cập nhật trạng thái Executor
     new SlashCommandBuilder()
         .setName('status')
         .setDescription('Cập nhật trạng thái Executor trên Website')
@@ -61,7 +62,25 @@ const commands = [
                     { name: 'PATCHED', value: 'PATCHED' },
                     { name: 'UNSTABLE', value: 'UNSTABLE' },
                     { name: 'OUTDATED', value: 'OUTDATED' }
-                ))
+                )),
+
+    // Lệnh 2: Đổi Tiêu Đề Chính (H1)
+    new SlashCommandBuilder()
+        .setName('settitle')
+        .setDescription('Đổi Tiêu Đề Chính (H1) trên Website')
+        .addStringOption(option => 
+            option.setName('text')
+                .setDescription('Nhập tiêu đề mới (H1)')
+                .setRequired(true)),
+
+    // Lệnh 3: Đổi Dòng Mô Tả Phụ (Subtitle)
+    new SlashCommandBuilder()
+        .setName('setsubtitle')
+        .setDescription('Đổi Dòng Mô Tả Phụ (Subtitle) trên Website')
+        .addStringOption(option => 
+            option.setName('text')
+                .setDescription('Nhập dòng mô tả phụ mới')
+                .setRequired(true))
 ].map(command => command.toJSON());
 
 const rest = new REST({ version: '10' }).setToken(TOKEN);
@@ -70,7 +89,7 @@ client.once('ready', async () => {
     console.log(`=> Bot executorbotbyhuy đã online thành công: ${client.user.tag}`);
     try {
         await rest.put(Routes.applicationCommands(CLIENT_ID), { body: commands });
-        console.log('=> Đã cập nhật đúng chuẩn 23 tên Executor trên npoint!');
+        console.log('=> Đã cập nhật xong tất cả các lệnh (/status, /settitle, /setsubtitle)!');
     } catch (error) {
         console.error(error);
     }
@@ -79,7 +98,10 @@ client.once('ready', async () => {
 client.on('interactionCreate', async interaction => {
     if (!interaction.isChatInputCommand()) return;
 
-    if (interaction.commandName === 'status') {
+    const { commandName } = interaction;
+
+    // --- XỬ LÝ LỆNH /status ---
+    if (commandName === 'status') {
         const rawChoice = interaction.options.getString('name');
         const newState = interaction.options.getString('state');
 
@@ -108,7 +130,6 @@ client.on('interactionCreate', async interaction => {
                 const itemNameLower = item.name.trim().toLowerCase();
                 const itemPlatLower = (item.plat || '').trim().toLowerCase();
 
-                // Xử lý riêng cho Delta Android & Delta iOS
                 if (rawChoice === 'delta_android') {
                     displayTargetName = 'Delta (Android)';
                     if (itemNameLower === 'delta' && itemPlatLower === 'android') {
@@ -124,7 +145,6 @@ client.on('interactionCreate', async interaction => {
                         break;
                     }
                 } else {
-                    // Các Executor khác
                     if (itemNameLower === rawChoice.trim().toLowerCase()) {
                         displayTargetName = item.name;
                         item.status = newState;
@@ -152,11 +172,81 @@ client.on('interactionCreate', async interaction => {
             });
 
             if (updateRes.ok) {
-                await interaction.editReply(`✅ Cập nhật thành công! **${displayTargetName}** -> **${newState}** (By Admin Siêu Đẹp Trai).`);
+                await interaction.editReply(`✅ Cập nhật thành công! **${displayTargetName}** -> **${newState}**.`);
             } else {
-                await interaction.editReply(`⚠️ Lỗi khi lưu dữ liệu lên hệ thống npoint.`);
+                await interaction.editReply(`⚠️ Lỗi khi lưu dữ liệu lên hệ thống data by Admin.`);
             }
 
+        } catch (err) {
+            console.error(err);
+            await interaction.editReply(`❌ Lỗi kết nối cơ sở dữ liệu!`);
+        }
+    }
+
+    // --- XỬ LÝ LỆNH /settitle ---
+    if (commandName === 'settitle') {
+        const newTitle = interaction.options.getString('text');
+        await interaction.deferReply();
+
+        try {
+            const res = await fetch(API_URL);
+            const data = await res.json();
+
+            let itemsList = Array.isArray(data) ? data : (data.items || []);
+            let currentSubtitle = data.subtitle || "...";
+
+            const payload = {
+                title: newTitle,
+                subtitle: currentSubtitle,
+                items: itemsList
+            };
+
+            const updateRes = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (updateRes.ok) {
+                await interaction.editReply(`✅ Đã đổi **Tiêu Đề Chính (H1)** thành: **"${newTitle}"**`);
+            } else {
+                await interaction.editReply(`⚠️ Lỗi khi lưu dữ liệu lên Data by Admin.`);
+            }
+        } catch (err) {
+            console.error(err);
+            await interaction.editReply(`❌ Lỗi kết nối cơ sở dữ liệu!`);
+        }
+    }
+
+    // --- XỬ LÝ LỆNH /setsubtitle ---
+    if (commandName === 'setsubtitle') {
+        const newSubtitle = interaction.options.getString('text');
+        await interaction.deferReply();
+
+        try {
+            const res = await fetch(API_URL);
+            const data = await res.json();
+
+            let itemsList = Array.isArray(data) ? data : (data.items || []);
+            let currentTitle = data.title || "Executors Status By Huy";
+
+            const payload = {
+                title: currentTitle,
+                subtitle: newSubtitle,
+                items: itemsList
+            };
+
+            const updateRes = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (updateRes.ok) {
+                await interaction.editReply(`✅ Đã đổi **Dòng Mô Tả Phụ (Subtitle)** thành: **"${newSubtitle}"**`);
+            } else {
+                await interaction.editReply(`⚠️ Lỗi khi lưu dữ liệu lên Data by Admin.`);
+            }
         } catch (err) {
             console.error(err);
             await interaction.editReply(`❌ Lỗi kết nối cơ sở dữ liệu!`);
