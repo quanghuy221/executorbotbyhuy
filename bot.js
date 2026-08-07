@@ -64,7 +64,48 @@ const commands = [
                     { name: 'OUTDATED', value: 'OUTDATED' }
                 )),
 
-    // Lệnh 2: Đổi Tiêu Đề Chính (H1)
+    // Lệnh 2: Thêm Executor Mới (Đầy đủ chức năng giống Web Admin)
+    new SlashCommandBuilder()
+        .setName('add')
+        .setDescription('Thêm Executor mới vào Website')
+        .addStringOption(option =>
+            option.setName('name')
+                .setDescription('Tên Executor mới')
+                .setRequired(true))
+        .addStringOption(option =>
+            option.setName('plat')
+                .setDescription('Chọn Nền Tảng')
+                .setRequired(true)
+                .addChoices(
+                    { name: 'Windows', value: 'Windows' },
+                    { name: 'Android', value: 'Android' },
+                    { name: 'iOS', value: 'iOS' },
+                    { name: 'Mac', value: 'Mac' }
+                ))
+        .addStringOption(option =>
+            option.setName('state')
+                .setDescription('Trạng thái (Mặc định: WORKING)')
+                .setRequired(false)
+                .addChoices(
+                    { name: 'WORKING', value: 'WORKING' },
+                    { name: 'PATCHED', value: 'PATCHED' },
+                    { name: 'UNSTABLE', value: 'UNSTABLE' },
+                    { name: 'OUTDATED', value: 'OUTDATED' }
+                ))
+        .addStringOption(option =>
+            option.setName('price')
+                .setDescription('Giá tiền (Mặc định: Free)')
+                .setRequired(false))
+        .addStringOption(option =>
+            option.setName('time')
+                .setDescription('Thời gian cập nhật (Mặc định: Cập nhật sau)')
+                .setRequired(false))
+        .addStringOption(option =>
+            option.setName('note')
+                .setDescription('Ghi chú thêm (Mặc định: -)')
+                .setRequired(false)),
+
+    // Lệnh 3: Đổi Tiêu Đề Chính (H1)
     new SlashCommandBuilder()
         .setName('settitle')
         .setDescription('Đổi Tiêu Đề Chính (H1) trên Website')
@@ -73,7 +114,7 @@ const commands = [
                 .setDescription('Nhập tiêu đề mới (H1)')
                 .setRequired(true)),
 
-    // Lệnh 3: Đổi Dòng Mô Tả Phụ (Subtitle)
+    // Lệnh 4: Đổi Dòng Mô Tả Phụ (Subtitle)
     new SlashCommandBuilder()
         .setName('setsubtitle')
         .setDescription('Đổi Dòng Mô Tả Phụ (Subtitle) trên Website')
@@ -89,7 +130,7 @@ client.once('ready', async () => {
     console.log(`=> Bot executorbotbyhuy đã online thành công: ${client.user.tag}`);
     try {
         await rest.put(Routes.applicationCommands(CLIENT_ID), { body: commands });
-        console.log('=> Đã cập nhật xong tất cả các lệnh (/status, /settitle, /setsubtitle)!');
+        console.log('=> Đã cập nhật xong tất cả các lệnh (/status, /add, /settitle, /setsubtitle)!');
     } catch (error) {
         console.error(error);
     }
@@ -175,6 +216,88 @@ client.on('interactionCreate', async interaction => {
                 await interaction.editReply(`✅ Cập nhật thành công! **${displayTargetName}** -> **${newState}**.`);
             } else {
                 await interaction.editReply(`⚠️ Lỗi khi lưu dữ liệu lên hệ thống data by Admin.`);
+            }
+
+        } catch (err) {
+            console.error(err);
+            await interaction.editReply(`❌ Lỗi kết nối cơ sở dữ liệu!`);
+        }
+    }
+
+    // --- XỬ LÝ LỆNH /add (THÊM EXECUTOR MỚI) ---
+    if (commandName === 'add') {
+        const inputName = interaction.options.getString('name').trim();
+        const inputPlat = interaction.options.getString('plat');
+        const inputStatus = interaction.options.getString('state') || 'WORKING';
+        const inputPrice = interaction.options.getString('price') || 'Free';
+        const inputTime = interaction.options.getString('time') || 'Cập nhật sau';
+        const inputNote = interaction.options.getString('note') || '-';
+
+        await interaction.deferReply();
+
+        try {
+            const res = await fetch(API_URL);
+            const data = await res.json();
+
+            let itemsList = [];
+            let siteTitle = "Executors Status By Huy";
+            let siteSubtitle = "...";
+
+            if (Array.isArray(data)) {
+                itemsList = data;
+            } else if (data && typeof data === 'object') {
+                siteTitle = data.title || siteTitle;
+                siteSubtitle = data.subtitle || siteSubtitle;
+                itemsList = Array.isArray(data.items) ? data.items : [];
+            }
+
+            // Kiểm tra xem đã tồn tại Executor cùng tên & nền tảng chưa
+            const existingIndex = itemsList.findIndex(item => 
+                item.name.toLowerCase() === inputName.toLowerCase() && 
+                (item.plat || '').toLowerCase() === inputPlat.toLowerCase()
+            );
+
+            const newItem = {
+                name: inputName,
+                plat: inputPlat,
+                status: inputStatus,
+                price: inputPrice,
+                time: inputTime,
+                note: inputNote
+            };
+
+            if (existingIndex !== -1) {
+                // Nếu đã có thì cập nhật đè
+                itemsList[existingIndex] = newItem;
+            } else {
+                // Nếu chưa có thì thêm mới vào danh sách
+                itemsList.push(newItem);
+            }
+
+            const payload = {
+                title: siteTitle,
+                subtitle: siteSubtitle,
+                items: itemsList
+            };
+
+            const updateRes = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (updateRes.ok) {
+                await interaction.editReply(
+                    `✅ **Thêm Executor thành công!**\n` +
+                    `• **Tên:** ${inputName}\n` +
+                    `• **Nền tảng:** ${inputPlat}\n` +
+                    `• **Trạng thái:** ${inputStatus}\n` +
+                    `• **Giá:** ${inputPrice}\n` +
+                    `• **Cập nhật:** ${inputTime}\n` +
+                    `• **Ghi chú:** ${inputNote}`
+                );
+            } else {
+                await interaction.editReply(`⚠️ Lỗi khi lưu dữ liệu mới lên API!`);
             }
 
         } catch (err) {
