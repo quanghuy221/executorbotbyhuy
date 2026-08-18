@@ -13,6 +13,7 @@ http.createServer((req, res) => {
 const TOKEN = process.env.TOKEN;
 const CLIENT_ID = '1534889412125786174'; 
 const API_URL = 'https://api.npoint.io/9d78b91f5a0f7c9f5ec8';
+const BANWAVE_API_URL = 'https://api.npoint.io/db97bcdc9bb0181fe3ee';
 
 const client = new Client({
     intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent]
@@ -28,6 +29,7 @@ const commands = [
                 .setDescription('Chọn tên Executor trên Website')
                 .setRequired(true)
                 .addChoices(
+                    { name: 'QH Executor (Beta)', value: 'QH Executor (Beta)' },
                     { name: 'Yub X', value: 'yub x' },
                     { name: 'Nexomia', value: 'nexomia' },
                     { name: 'Potassium', value: 'potassium' },
@@ -195,7 +197,34 @@ const commands = [
         .addStringOption(option => 
             option.setName('text')
                 .setDescription('Nhập dòng mô tả phụ mới')
+                .setRequired(true)),
+
+    // Lệnh 7: Cập nhật cấu hình Banwave
+    new SlashCommandBuilder()
+        .setName('banwave')
+        .setDescription('Cập nhật thông tin Banwave trên Website')
+        .addStringOption(option => 
+            option.setName('status')
+                .setDescription('Biểu tượng trạng thái (Ví dụ: 🟢, 🔴, 🟡)')
                 .setRequired(true))
+        .addStringOption(option => 
+            option.setName('code')
+                .setDescription('Mã trạng thái Banwave')
+                .setRequired(true)
+                .addChoices(
+                    { name: 'safe (An toàn)', value: 'safe' },
+                    { name: 'warning (Cảnh báo)', value: 'warning' },
+                    { name: 'detected (Phát hiện Banwave)', value: 'detected' },
+                    { name: 'maintenance (Bảo trì)', value: 'maintenance' }
+                ))
+        .addStringOption(option => 
+            option.setName('announcement')
+                .setDescription('Thông báo Banwave chính')
+                .setRequired(true))
+        .addStringOption(option => 
+            option.setName('note')
+                .setDescription('Ghi chú thêm / Mô tả chi tiết')
+                .setRequired(false))
 ].map(command => command.toJSON());
 
 const rest = new REST({ version: '10' }).setToken(TOKEN);
@@ -204,7 +233,7 @@ client.once('ready', async () => {
     console.log(`=> Bot executorbotbyhuy đã online thành công: ${client.user.tag}`);
     try {
         await rest.put(Routes.applicationCommands(CLIENT_ID), { body: commands });
-        console.log('=> Đã cập nhật xong tất cả các lệnh (/status, /add, /delete, /change, /settitle, /setsubtitle)!');
+        console.log('=> Đã cập nhật xong tất cả các lệnh (/status, /add, /delete, /change, /settitle, /setsubtitle, /banwave)!');
     } catch (error) {
         console.error(error);
     }
@@ -597,6 +626,46 @@ client.on('interactionCreate', async interaction => {
         } catch (err) {
             console.error(err);
             await interaction.editReply(`❌ Lỗi kết nối cơ sở dữ liệu!`);
+        }
+    }
+
+    // --- XỬ LÝ LỆNH /banwave ---
+    if (commandName === 'banwave') {
+        const inputStatus = interaction.options.getString('status');
+        const inputCode = interaction.options.getString('code');
+        const inputAnnouncement = interaction.options.getString('announcement');
+        const inputNote = interaction.options.getString('note') || '';
+
+        await interaction.deferReply();
+
+        try {
+            const payload = {
+                banwave_status: inputStatus,
+                status_code: inputCode,
+                announcement: inputAnnouncement,
+                sub_note: inputNote
+            };
+
+            const updateRes = await fetch(BANWAVE_API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+
+            if (updateRes.ok) {
+                await interaction.editReply(
+                    `🚨 **Cập nhật Banwave thành công!**\n` +
+                    `• **Trạng thái:** ${inputStatus}\n` +
+                    `• **Status Code:** \`${inputCode}\`\n` +
+                    `• **Thông báo:** ${inputAnnouncement}\n` +
+                    `• **Ghi chú:** ${inputNote || 'Không có'}`
+                );
+            } else {
+                await interaction.editReply(`⚠️ Lỗi khi lưu dữ liệu Banwave lên API!`);
+            }
+        } catch (err) {
+            console.error(err);
+            await interaction.editReply(`❌ Lỗi kết nối cơ sở dữ liệu Banwave!`);
         }
     }
 });
