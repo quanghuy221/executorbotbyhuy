@@ -1,4 +1,14 @@
-const { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { 
+    Client, 
+    GatewayIntentBits, 
+    REST, 
+    Routes, 
+    SlashCommandBuilder, 
+    EmbedBuilder, 
+    ActionRowBuilder, 
+    ButtonBuilder, 
+    ButtonStyle 
+} = require('discord.js');
 const http = require('http');
 
 // --- CỔNG WEB GIẢ ĐỂ RENDER CHẠY 24/7 FREE ---
@@ -117,7 +127,7 @@ const commands = [
                 .setRequired(true))
         .addStringOption(option =>
             option.setName('plat')
-                .setDescription('Chọn Nền Tảng (Không bắt buộc, dùng để phân biệt nếu trùng tên)')
+                .setDescription('Chọn Nền Tảng')
                 .setRequired(false)
                 .addChoices(
                     { name: 'Windows', value: 'Windows' },
@@ -136,7 +146,7 @@ const commands = [
                 .setRequired(true))
         .addStringOption(option =>
             option.setName('target_plat')
-                .setDescription('Nền tảng hiện tại (Dùng để tìm đúng Executor nếu trùng tên)')
+                .setDescription('Nền tảng hiện tại')
                 .setRequired(false)
                 .addChoices(
                     { name: 'Windows', value: 'Windows' },
@@ -226,29 +236,37 @@ const commands = [
                 .setDescription('Ghi chú thêm / Mô tả chi tiết')
                 .setRequired(false)),
 
-    // Lệnh 8: Gửi bảng thông báo Update
+    // Lệnh 8: Gửi bảng thông báo Update (Chuẩn UI Real 100%)
     new SlashCommandBuilder()
         .setName('update')
-        .setDescription('Gửi bảng thông báo cập nhật (Update)')
+        .setDescription('Gửi bảng thông báo cập nhật (Style Real chuẩn 100%)')
         .addStringOption(option =>
             option.setName('status')
-                .setDescription('Nhập trạng thái (Ví dụ: 🟢)')
+                .setDescription('Trạng thái (Ví dụ: 🟢)')
                 .setRequired(true))
         .addStringOption(option =>
             option.setName('version')
-                .setDescription('Nhập Version (Ví dụ: 0.28)')
+                .setDescription('Version (Ví dụ: 2.1.2)')
                 .setRequired(true))
         .addStringOption(option =>
             option.setName('roblox_version')
-                .setDescription('Nhập Roblox Version (Ví dụ: version-ddf602d9cfe44005)')
+                .setDescription('Roblox Version (Ví dụ: version-ddf602d9cfe44005)')
                 .setRequired(true))
         .addStringOption(option =>
             option.setName('changelog')
-                .setDescription('Nhập Changelog (Dùng dấu | để phân cách các dòng)')
+                .setDescription('Nội dung Changelog (Dùng dấu | để phân dòng)')
                 .setRequired(true))
         .addStringOption(option =>
+            option.setName('middle_text')
+                .setDescription('Nội dung ở giữa 2 thanh gạch ngang (Mặc định: .)')
+                .setRequired(false))
+        .addStringOption(option =>
             option.setName('note')
-                .setDescription('Ghi chú dòng cuối (Mặc định: Restart QH Executor for the update)')
+                .setDescription('Ghi chú dòng cuối (Mặc định: Please restart Real to apply changes...)')
+                .setRequired(false))
+        .addStringOption(option =>
+            option.setName('link')
+                .setDescription('Link tải ứng dụng (Nếu có sẽ hiện nút Download bên dưới)')
                 .setRequired(false)),
 
     // Lệnh 9: Thay đổi trạng thái Online/Offline của bot
@@ -271,10 +289,10 @@ const commands = [
 const rest = new REST({ version: '10' }).setToken(TOKEN);
 
 client.once('ready', async () => {
-    console.log(`=> Bot online thanh cong: ${client.user.tag}`);
+    console.log(`=> Bot online thành công: ${client.user.tag}`);
     try {
         await rest.put(Routes.applicationCommands(CLIENT_ID), { body: commands });
-        console.log('=> Da cap nhat xong tat ca cac lenh!');
+        console.log('=> Đã cập nhật xong tất cả các lệnh!');
     } catch (error) {
         console.error(error);
     }
@@ -296,17 +314,9 @@ client.on('interactionCreate', async interaction => {
             const res = await fetch(API_URL);
             const data = await res.json();
 
-            let itemsList = [];
-            let siteTitle = "Executors Status By Huy";
-            let siteSubtitle = "...";
-
-            if (Array.isArray(data)) {
-                itemsList = data;
-            } else if (data && typeof data === 'object') {
-                siteTitle = data.title || siteTitle;
-                siteSubtitle = data.subtitle || siteSubtitle;
-                itemsList = Array.isArray(data.items) ? data.items : [];
-            }
+            let itemsList = Array.isArray(data) ? data : (data.items || []);
+            let siteTitle = data.title || "Executors Status By Huy";
+            let siteSubtitle = data.subtitle || "...";
 
             let found = false;
             let displayTargetName = rawChoice;
@@ -344,11 +354,7 @@ client.on('interactionCreate', async interaction => {
                 return;
             }
 
-            const payload = {
-                title: siteTitle,
-                subtitle: siteSubtitle,
-                items: itemsList
-            };
+            const payload = { title: siteTitle, subtitle: siteSubtitle, items: itemsList };
 
             const updateRes = await fetch(API_URL, {
                 method: 'POST',
@@ -383,17 +389,9 @@ client.on('interactionCreate', async interaction => {
             const res = await fetch(API_URL);
             const data = await res.json();
 
-            let itemsList = [];
-            let siteTitle = "Executors Status By Huy";
-            let siteSubtitle = "...";
-
-            if (Array.isArray(data)) {
-                itemsList = data;
-            } else if (data && typeof data === 'object') {
-                siteTitle = data.title || siteTitle;
-                siteSubtitle = data.subtitle || siteSubtitle;
-                itemsList = Array.isArray(data.items) ? data.items : [];
-            }
+            let itemsList = Array.isArray(data) ? data : (data.items || []);
+            let siteTitle = data.title || "Executors Status By Huy";
+            let siteSubtitle = data.subtitle || "...";
 
             const existingIndex = itemsList.findIndex(item => 
                 item.name.toLowerCase() === inputName.toLowerCase() && 
@@ -415,11 +413,7 @@ client.on('interactionCreate', async interaction => {
                 itemsList.push(newItem);
             }
 
-            const payload = {
-                title: siteTitle,
-                subtitle: siteSubtitle,
-                items: itemsList
-            };
+            const payload = { title: siteTitle, subtitle: siteSubtitle, items: itemsList };
 
             const updateRes = await fetch(API_URL, {
                 method: 'POST',
@@ -553,20 +547,90 @@ client.on('interactionCreate', async interaction => {
         }
     }
 
-    // --- XỬ LÝ LỆNH /settitle & /setsubtitle & /banwave ---
-    if (commandName === 'settitle' || commandName === 'setsubtitle' || commandName === 'banwave') {
-        // [Giữ nguyên logic xử lý như các phiên bản trước]
+    // --- XỬ LÝ LỆNH /settitle ---
+    if (commandName === 'settitle') {
+        const newTitle = interaction.options.getString('text');
+        await interaction.deferReply();
+        try {
+            const res = await fetch(API_URL);
+            const data = await res.json();
+            let itemsList = Array.isArray(data) ? data : (data.items || []);
+            let currentSubtitle = data.subtitle || "...";
+            const payload = { title: newTitle, subtitle: currentSubtitle, items: itemsList };
+            const updateRes = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (updateRes.ok) await interaction.editReply(`✅ Đã đổi **Tiêu Đề Chính (H1)** thành: **"${newTitle}"**`);
+            else await interaction.editReply(`⚠️ Lỗi khi lưu dữ liệu lên Data by Admin.`);
+        } catch (err) {
+            console.error(err);
+            await interaction.editReply(`❌ Lỗi kết nối cơ sở dữ liệu!`);
+        }
     }
 
-    // --- XỬ LÝ LỆNH /update (TỐI ƯU GIAO DIỆN CHUẨN REAL) ---
+    // --- XỬ LÝ LỆNH /setsubtitle ---
+    if (commandName === 'setsubtitle') {
+        const newSubtitle = interaction.options.getString('text');
+        await interaction.deferReply();
+        try {
+            const res = await fetch(API_URL);
+            const data = await res.json();
+            let itemsList = Array.isArray(data) ? data : (data.items || []);
+            let currentTitle = data.title || "Executors Status By Huy";
+            const payload = { title: currentTitle, subtitle: newSubtitle, items: itemsList };
+            const updateRes = await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (updateRes.ok) await interaction.editReply(`✅ Đã đổi **Dòng Mô Tả Phụ (Subtitle)** thành: **"${newSubtitle}"**`);
+            else await interaction.editReply(`⚠️ Lỗi khi lưu dữ liệu lên Data by Admin.`);
+        } catch (err) {
+            console.error(err);
+            await interaction.editReply(`❌ Lỗi kết nối cơ sở dữ liệu!`);
+        }
+    }
+
+    // --- XỬ LÝ LỆNH /banwave ---
+    if (commandName === 'banwave') {
+        const inputStatus = interaction.options.getString('status');
+        const inputCode = interaction.options.getString('code');
+        const inputAnnouncement = interaction.options.getString('announcement');
+        const inputNote = interaction.options.getString('note') || '';
+        await interaction.deferReply();
+        try {
+            const payload = {
+                banwave_status: inputStatus,
+                status_code: inputCode,
+                announcement: inputAnnouncement,
+                sub_note: inputNote
+            };
+            const updateRes = await fetch(BANWAVE_API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (updateRes.ok) await interaction.editReply(`🚨 **Cập nhật Banwave thành công!**`);
+            else await interaction.editReply(`⚠️ Lỗi khi lưu dữ liệu Banwave lên API!`);
+        } catch (err) {
+            console.error(err);
+            await interaction.editReply(`❌ Lỗi kết nối cơ sở dữ liệu Banwave!`);
+        }
+    }
+
+    // --- XỬ LÝ LỆNH /update ---
     if (commandName === 'update') {
         const inputStatus = interaction.options.getString('status');
         const inputVersion = interaction.options.getString('version');
         const inputRobloxVersion = interaction.options.getString('roblox_version');
         const rawChangelog = interaction.options.getString('changelog');
-        const inputNote = interaction.options.getString('note') || 'Restart QH Executor for the update';
+        const inputMiddleText = interaction.options.getString('middle_text') ?? '.';
+        const inputNote = interaction.options.getString('note') || 'Please restart Real to apply the changes or download.';
+        const inputLink = interaction.options.getString('link');
 
-        // Tự động phân tách danh sách Changelog theo dấu | hoặc xuống dòng
+        // Phân tách câu theo dấu | hoặc xuống dòng
         const formattedChangelog = rawChangelog
             .split(/\||\n/)
             .map(item => item.trim())
@@ -576,22 +640,43 @@ client.on('interactionCreate', async interaction => {
 
         const currentTimestamp = Math.floor(Date.now() / 1000);
 
-        const updateEmbed = new EmbedBuilder()
+        // EMBED 1: Banner UPDATE nằm trên đầu
+        const bannerEmbed = new EmbedBuilder()
             .setColor(0x2b2d31)
-            .setImage('https://i.ibb.co/W4ZBm7kq/Update.png') // Đưa banner UPDATE vào Embed
+            .setImage('https://i.ibb.co/W4ZBm7kq/Update.png');
+
+        // EMBED 2: Nội dung chi tiết
+        const contentEmbed = new EmbedBuilder()
+            .setColor(0x2b2d31)
             .setDescription(
+                `---\n` +
                 `**Status:** ${inputStatus}\n` +
                 `**Time:** <t:${currentTimestamp}:F>\n` +
                 `**Version:** \`${inputVersion}\`\n` +
-                `**Roblox Version:**\n` +
-                `\`${inputRobloxVersion}\`\n\n` +
-                `───────────────────────────────\n` +
+                `**Roblox Version:** \`${inputRobloxVersion}\`\n\n` +
+                `${inputMiddleText}\n` +
+                `---\n` +
                 `**Changelog:**\n` +
                 `${formattedChangelog}\n\n` +
                 `${inputNote}`
             );
 
-        await interaction.reply({ embeds: [updateEmbed] });
+        const responseOptions = {
+            embeds: [bannerEmbed, contentEmbed]
+        };
+
+        // Nếu có nhập link, tạo nút Download ↗
+        if (inputLink) {
+            const downloadButton = new ButtonBuilder()
+                .setLabel('Download')
+                .setStyle(ButtonStyle.Link)
+                .setURL(inputLink);
+
+            const row = new ActionRowBuilder().addComponents(downloadButton);
+            responseOptions.components = [row];
+        }
+
+        await interaction.reply(responseOptions);
     }
 
     // --- XỬ LÝ LỆNH /online ---
