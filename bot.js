@@ -236,37 +236,37 @@ const commands = [
                 .setDescription('Ghi chú thêm / Mô tả chi tiết')
                 .setRequired(false)),
 
-    // Lệnh 8: Gửi bảng thông báo Update (Chuẩn UI Real 100%)
+    // Lệnh 8: Gửi bảng thông báo Update (Chuẩn UI 100% linh hoạt)
     new SlashCommandBuilder()
         .setName('update')
         .setDescription('Gửi bảng thông báo cập nhật (Style Real chuẩn 100%)')
         .addStringOption(option =>
             option.setName('status')
-                .setDescription('Trạng thái (Ví dụ: 🟢)')
-                .setRequired(true))
+                .setDescription('Trạng thái (Mặc định: 🟢 | working)')
+                .setRequired(false))
         .addStringOption(option =>
             option.setName('version')
-                .setDescription('Version (Ví dụ: 2.1.2)')
-                .setRequired(true))
+                .setDescription('Version (Mặc định: v3.6.75)')
+                .setRequired(false))
         .addStringOption(option =>
             option.setName('roblox_version')
-                .setDescription('Roblox Version (Ví dụ: version-ddf602d9cfe44005)')
-                .setRequired(true))
+                .setDescription('Roblox Version (Mặc định: version-ddf602d9cfe44005)')
+                .setRequired(false))
         .addStringOption(option =>
             option.setName('changelog')
                 .setDescription('Nội dung Changelog (Dùng dấu | để phân dòng)')
-                .setRequired(true))
+                .setRequired(false))
         .addStringOption(option =>
             option.setName('middle_text')
-                .setDescription('Nội dung văn bản ở giữa (Nếu không nhập sẽ bỏ qua)')
+                .setDescription('Chữ tiêu đề giữa (Mặc định: UPDATE)')
                 .setRequired(false))
         .addStringOption(option =>
             option.setName('note')
-                .setDescription('Ghi chú dòng cuối (Mặc định: Please restart Real...)')
+                .setDescription('Ghi chú dòng cuối (Mặc định: Please restart Crescent...)')
                 .setRequired(false))
         .addStringOption(option =>
             option.setName('link')
-                .setDescription('Link tải ứng dụng (Nếu điền sẽ hiện nút Download bên dưới)')
+                .setDescription('Link tải ứng dụng (Điền vào sẽ hiện nút Download)')
                 .setRequired(false)),
 
     // Lệnh 9: Thay đổi trạng thái Online/Offline của bot
@@ -620,63 +620,62 @@ client.on('interactionCreate', async interaction => {
         }
     }
 
-    // --- XỬ LÝ LỆNH /update (Y HỆT MẪU REAL BOT 100%) ---
+    // --- XỬ LÝ LỆNH /update (MẪU CHUẨN 100% GIAO DIỆN) ---
     if (commandName === 'update') {
-        const inputStatus = interaction.options.getString('status');
-        const inputVersion = interaction.options.getString('version');
-        const inputRobloxVersion = interaction.options.getString('roblox_version');
-        const rawChangelog = interaction.options.getString('changelog');
-        const inputMiddleText = interaction.options.getString('middle_text');
-        const inputNote = interaction.options.getString('note') || 'Please restart Real to apply the changes or download.';
+        const inputStatus = interaction.options.getString('status') || '🟢 | working';
+        const inputVersion = interaction.options.getString('version') || 'v3.6.75';
+        const inputRobloxVersion = interaction.options.getString('roblox_version') || 'version-ddf602d9cfe44005';
+        
+        const defaultChangelog = 
+            `The "Roblox Version Wrong" issue has been resolved|` +
+            `Roblox version management has been rewritten to replace the existing Roblox automatic update mechanism|` +
+            `"Auto Downgrade Roblox" feature has been removed (it is no longer needed)`;
+            
+        const rawChangelog = interaction.options.getString('changelog') || defaultChangelog;
+        const inputMiddleText = interaction.options.getString('middle_text') || 'UPDATE';
+        const inputNote = interaction.options.getString('note') || 'Please restart Crescent to apply the changes or download.';
         const inputLink = interaction.options.getString('link');
 
-        // Định dạng danh sách Changelog chuẩn từng dòng với đầu chấm tròn
+        // Định dạng Changelog trong khung Codeblock với dấu '+' ở đầu mỗi dòng
         const formattedChangelog = rawChangelog
             .split(/\||\n/)
             .map(item => item.trim())
             .filter(item => item.length > 0)
-            .map(item => `• ${item}`)
+            .map(item => item.startsWith('+') ? item : `+ ${item}`)
             .join('\n');
 
         const currentTimestamp = Math.floor(Date.now() / 1000);
 
-        // EMBED 1: Banner Ảnh UPDATE ở trên cùng
-        const bannerEmbed = new EmbedBuilder()
-            .setColor(0x2b2d31)
-            .setImage('https://i.ibb.co/W4ZBm7kq/Update.png');
-
-        // Tạo chuỗi nội dung với đường kẻ chìm Markdown chuẩn Discord (`---`)
+        // Tạo nội dung Description khớp 100% từng dòng
         let descriptionContent = 
             `**Status:** ${inputStatus}\n` +
             `**Time:** <t:${currentTimestamp}:F>\n` +
             `**Version:** \`${inputVersion}\`\n` +
-            `**Roblox Version:** \`${inputRobloxVersion}\`\n\n` +
-            `---`;
+            `**Roblox Version:**\n\`${inputRobloxVersion}\`\n\n` +
+            `-----------------------------------\n\n` +
+            `**${inputMiddleText}**\n` +
+            `**Change log:**\n` +
+            `\`\`\`\n${formattedChangelog}\n\`\`\`\n\n` +
+            `*${inputNote}*`;
 
-        if (inputMiddleText && inputMiddleText.trim().length > 0) {
-            descriptionContent += `\n${inputMiddleText.trim()}\n---`;
-        }
-
-        descriptionContent += 
-            `\n\n**Changelog:**\n` +
-            `${formattedChangelog}\n\n` +
-            `${inputNote}`;
-
-        // EMBED 2: Nội dung chi tiết chuẩn Real
-        const contentEmbed = new EmbedBuilder()
+        // Embed chuẩn ghép cả Banner lẫn Nội dung vào 1 khung duy nhất
+        const updateEmbed = new EmbedBuilder()
             .setColor(0x2b2d31)
+            .setImage('https://i.ibb.co/W4ZBm7kq/Update.png')
             .setDescription(descriptionContent);
 
         const responseOptions = {
-            embeds: [bannerEmbed, contentEmbed]
+            content: '@everyone',
+            embeds: [updateEmbed]
         };
 
-        // Nút Link Download tự hiện khi điền option link
+        // Nút bấm Link Download tự xuất hiện khi có truyền option link
         if (inputLink) {
             const downloadButton = new ButtonBuilder()
                 .setLabel('Download')
                 .setStyle(ButtonStyle.Link)
-                .setURL(inputLink);
+                .setURL(inputLink)
+                .setEmoji('🔗');
 
             const row = new ActionRowBuilder().addComponents(downloadButton);
             responseOptions.components = [row];
