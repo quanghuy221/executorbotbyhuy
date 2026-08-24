@@ -258,7 +258,7 @@ const commands = [
                 .setRequired(true))
         .addStringOption(option =>
             option.setName('middle_text')
-                .setDescription('Nội dung ở giữa 2 thanh gạch ngang (Mặc định: .)')
+                .setDescription('Nội dung ở giữa (Mặc định: -)')
                 .setRequired(false))
         .addStringOption(option =>
             option.setName('note')
@@ -266,7 +266,7 @@ const commands = [
                 .setRequired(false))
         .addStringOption(option =>
             option.setName('link')
-                .setDescription('Link tải ứng dụng (Nếu có sẽ hiện nút Download bên dưới)')
+                .setDescription('Link tải ứng dụng (Nếu điền sẽ hiện nút Download bên dưới)')
                 .setRequired(false)),
 
     // Lệnh 9: Thay đổi trạng thái Online/Offline của bot
@@ -510,7 +510,7 @@ client.on('interactionCreate', async interaction => {
                 const nameMatch = item.name.trim().toLowerCase() === targetName.toLowerCase();
                 if (!nameMatch) return false;
                 if (targetPlat) {
-                    return (item.plat || '').trim().toLowerCase() === targetPlat.toLowerCase();
+                    return (item.plat || '').trim().toLowerCase() !== targetPlat.toLowerCase();
                 }
                 return true;
             });
@@ -626,11 +626,11 @@ client.on('interactionCreate', async interaction => {
         const inputVersion = interaction.options.getString('version');
         const inputRobloxVersion = interaction.options.getString('roblox_version');
         const rawChangelog = interaction.options.getString('changelog');
-        const inputMiddleText = interaction.options.getString('middle_text') ?? '.';
+        const inputMiddleText = interaction.options.getString('middle_text');
         const inputNote = interaction.options.getString('note') || 'Please restart Real to apply the changes or download.';
         const inputLink = interaction.options.getString('link');
 
-        // Phân tách câu theo dấu | hoặc xuống dòng
+        // Phân tách câu Changelog theo dấu | hoặc xuống dòng
         const formattedChangelog = rawChangelog
             .split(/\||\n/)
             .map(item => item.trim())
@@ -640,22 +640,29 @@ client.on('interactionCreate', async interaction => {
 
         const currentTimestamp = Math.floor(Date.now() / 1000);
 
-        // EMBED 1: Banner UPDATE nằm trên đầu
+        // EMBED 1: Banner UPDATE ở đầu
         const bannerEmbed = new EmbedBuilder()
             .setColor(0x2b2d31)
             .setImage('https://i.ibb.co/W4ZBm7kq/Update.png');
 
-        // EMBED 2: Nội dung chi tiết
+        // Xử lý nội dung giữa (nếu không nhập thì mặc định là '-')
+        let middleSection = '';
+        if (inputMiddleText && inputMiddleText.trim().length > 0) {
+            middleSection = `${inputMiddleText.trim()}\n`;
+        } else {
+            middleSection = `-\n`;
+        }
+
+        // EMBED 2: Nội dung thông tin với đường gạch ngang thẳng tắp chuẩn 100%
         const contentEmbed = new EmbedBuilder()
             .setColor(0x2b2d31)
             .setDescription(
-                `---\n` +
                 `**Status:** ${inputStatus}\n` +
                 `**Time:** <t:${currentTimestamp}:F>\n` +
                 `**Version:** \`${inputVersion}\`\n` +
                 `**Roblox Version:** \`${inputRobloxVersion}\`\n\n` +
-                `${inputMiddleText}\n` +
-                `---\n` +
+                `${middleSection}` +
+                `───────────────────────────────\n` +
                 `**Changelog:**\n` +
                 `${formattedChangelog}\n\n` +
                 `${inputNote}`
@@ -665,7 +672,7 @@ client.on('interactionCreate', async interaction => {
             embeds: [bannerEmbed, contentEmbed]
         };
 
-        // Nếu có nhập link, tạo nút Download ↗
+        // Khi có điền ô `link`, tự tạo Nút Download ↗ gắn vào dướiEmbed
         if (inputLink) {
             const downloadButton = new ButtonBuilder()
                 .setLabel('Download')
