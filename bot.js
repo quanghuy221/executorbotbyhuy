@@ -236,7 +236,7 @@ const commands = [
                 .setDescription('Ghi chú thêm / Mô tả chi tiết')
                 .setRequired(false)),
 
-    // Lệnh 8: Gửi bảng thông báo Update (Chuẩn UI Real 100%)
+    // Lệnh 8: Gửi bảng thông báo Update (Chuẩn UI 100% Sạch Gạch - Full Width)
     new SlashCommandBuilder()
         .setName('update')
         .setDescription('Gửi bảng thông báo cập nhật (Style Real chuẩn 100%)')
@@ -645,27 +645,25 @@ client.on('interactionCreate', async interaction => {
             .setColor(0x2b2d31)
             .setImage('https://i.ibb.co/W4ZBm7kq/Update.png');
 
-        // ĐƯỜNG KẺ CHUẨN 100% ĐỘ RỘNG DISCORD (37 KÝ TỰ NẾT LIỀN `─`)
-        // Giúp kéo Embed 2 mở rộng full chiều ngang 100% bằng phẳng đét với Embed Ảnh ở trên
-        const divider = '─────────────────────────────────────';
+        // KÝ TỰ VÔ HÌNH HỆ THỐNG (BRAILLE BLANK) - ÉP EMBED GIÃN 100% BẰNG BANNER MÀ KHÔNG CÓ GẠCH XẤU
+        const invisibleSpacer = '⠀'.repeat(45);
 
-        // Xử lý đoạn văn bản ở giữa (nếu không điền sẽ tự động bỏ qua)
-        let middleSection = '';
+        // Xử lý đoạn văn bản ở giữa (nếu điền thì hiện, không điền thì cách dòng nhẹ)
+        let middleSection = '\n';
         if (inputMiddleText && inputMiddleText.trim().length > 0) {
-            middleSection = `\n${inputMiddleText.trim()}\n`;
+            middleSection = `\n${inputMiddleText.trim()}\n\n`;
         }
 
-        // EMBED 2: Nội dung chi tiết - Căn chỉnh chuẩn 100% UI
+        // EMBED 2: Nội dung chi tiết - Sạch sẽ, không dính bất kỳ đường gạch nào
         const contentEmbed = new EmbedBuilder()
             .setColor(0x2b2d31)
             .setDescription(
-                `${divider}\n\n` +
+                `${invisibleSpacer}\n` +
                 `**Status:** ${inputStatus}\n` +
                 `**Time:** <t:${currentTimestamp}:F>\n` +
                 `**Version:** \`${inputVersion}\`\n` +
                 `**Roblox Version:** \`${inputRobloxVersion}\`\n` +
-                `${middleSection}\n` +
-                `${divider}\n\n` +
+                `${middleSection}` +
                 `**Changelog:**\n` +
                 `${formattedChangelog}\n\n` +
                 `${inputNote}`
