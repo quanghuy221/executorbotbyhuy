@@ -226,10 +226,30 @@ const commands = [
                 .setDescription('Ghi chú thêm / Mô tả chi tiết')
                 .setRequired(false)),
 
-    // Lệnh 8: Gửi bảng thông báo Update
+    // Lệnh 8: Gửi bảng thông báo Update (Có các Option điền nội dung linh hoạt)
     new SlashCommandBuilder()
         .setName('update')
-        .setDescription('Gửi bảng thông báo cập nhật (Update)'),
+        .setDescription('Gửi bảng thông báo cập nhật (Update)')
+        .addStringOption(option =>
+            option.setName('status')
+                .setDescription('Nhập trạng thái (Ví dụ: 🟢)')
+                .setRequired(true))
+        .addStringOption(option =>
+            option.setName('version')
+                .setDescription('Nhập Version (Ví dụ: 2.1.2)')
+                .setRequired(true))
+        .addStringOption(option =>
+            option.setName('roblox_version')
+                .setDescription('Nhập Roblox Version (Ví dụ: version-ddf602d9cfe44005)')
+                .setRequired(true))
+        .addStringOption(option =>
+            option.setName('changelog')
+                .setDescription('Nhập nội dung Changelog (Ví dụ: Uploaded the Injector as UI 💀)')
+                .setRequired(true))
+        .addStringOption(option =>
+            option.setName('note')
+                .setDescription('Ghi chú dòng cuối (Mặc định: Please restart Real to apply the changes or download.)')
+                .setRequired(false)),
 
     // Lệnh 9: Thay đổi trạng thái Online/Offline của bot
     new SlashCommandBuilder()
@@ -254,7 +274,7 @@ client.once('ready', async () => {
     console.log(`=> Bot executorbotbyhuy đã online thành công: ${client.user.tag}`);
     try {
         await rest.put(Routes.applicationCommands(CLIENT_ID), { body: commands });
-        console.log('=> Đã cập nhật xong tất cả các lệnh (/status, /add, /delete, /change, /settitle, /setsubtitle, /banwave, /update, /online)!');
+        console.log('=> Đã cập nhật xong tất cả các lệnh!');
     } catch (error) {
         console.error(error);
     }
@@ -523,7 +543,6 @@ client.on('interactionCreate', async interaction => {
                 itemsList = Array.isArray(data.items) ? data.items : [];
             }
 
-            // Tìm vị trí của Executor cần sửa
             const targetIndex = itemsList.findIndex(item => {
                 const nameMatch = item.name.trim().toLowerCase() === targetName.toLowerCase();
                 if (!nameMatch) return false;
@@ -538,7 +557,6 @@ client.on('interactionCreate', async interaction => {
                 return;
             }
 
-            // Chỉ thay đổi thông tin những ô có nhập liệu
             if (newName) itemsList[targetIndex].name = newName.trim();
             if (newPlat) itemsList[targetIndex].plat = newPlat;
             if (newState) itemsList[targetIndex].status = newState;
@@ -690,22 +708,31 @@ client.on('interactionCreate', async interaction => {
         }
     }
 
-    // --- XỬ LÝ LỆNH /update (GỬI BẢNG THÔNG BÁO UPDATE - KHÔNG CÓ NÚT) ---
+    // --- XỬ LÝ LỆNH /update (TỰ ĐỘNG TẠO BẢNG CHUẨN REAL TỪ OPTION VÀ TỰ LẤY GIỜ) ---
     if (commandName === 'update') {
+        const inputStatus = interaction.options.getString('status');
+        const inputVersion = interaction.options.getString('version');
+        const inputRobloxVersion = interaction.options.getString('roblox_version');
+        const inputChangelog = interaction.options.getString('changelog');
+        const inputNote = interaction.options.getString('note') || 'Please restart Real to apply the changes or download.';
+
+        // Lấy Unix timestamp hiện tại chuẩn múi giờ Việt Nam
+        const currentTimestamp = Math.floor(Date.now() / 1000);
+
         const updateEmbed = new EmbedBuilder()
             .setColor(0x2b2d31)
             .setImage('https://i.ibb.co/W4ZBm7kq/Update.png')
             .setDescription(
-                `**Status:** 🟢\n` +
-                `**Time:** <t:${Math.floor(Date.now() / 1000)}:F>\n` +
-                `**Version:** \`2.1.2\`\n` +
+                `**Status:** ${inputStatus}\n` +
+                `**Time:** <t:${currentTimestamp}:F>\n` +
+                `**Version:** \`${inputVersion}\`\n` +
                 `**Roblox Version:**\n` +
-                `\`version-ddf602d9cfe44005\`\n\n` +
+                `\`${inputRobloxVersion}\`\n\n` +
                 `.\n` +
                 `-----------------------------------\n` +
                 `**Changelog:**\n` +
-                `• Uploaded the Injector as UI 💀\n\n` +
-                `Please restart Real to apply the changes or download.`
+                `• ${inputChangelog}\n\n` +
+                `${inputNote}`
             );
 
         await interaction.reply({ embeds: [updateEmbed] });
