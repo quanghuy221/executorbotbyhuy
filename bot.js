@@ -262,7 +262,7 @@ const commands = [
                 .setRequired(false))
         .addStringOption(option =>
             option.setName('note')
-                .setDescription('Ghi chú dòng cuối (Mặc định: Please restart...)')
+                .setDescription('Ghi chú dòng cuối (Mặc định: Restart)')
                 .setRequired(false))
         .addStringOption(option =>
             option.setName('link')
@@ -627,7 +627,7 @@ client.on('interactionCreate', async interaction => {
         const inputRobloxVersion = interaction.options.getString('roblox_version');
         const rawChangelog = interaction.options.getString('changelog');
         const inputMiddleText = interaction.options.getString('middle_text');
-        const inputNote = interaction.options.getString('note') || 'Please restart Real to apply the changes or download.';
+        const inputNote = interaction.options.getString('note') || 'Restart';
         const inputLink = interaction.options.getString('link');
 
         // Định dạng danh sách Changelog chuẩn từng dòng với đầu chấm tròn
@@ -645,23 +645,27 @@ client.on('interactionCreate', async interaction => {
             .setColor(0x2b2d31)
             .setImage('https://i.ibb.co/W4ZBm7kq/Update.png');
 
-        // Xử lý dòng nội dung ở giữa (nếu không nhập thì bỏ qua sạch sẽ)
+        // ĐƯỜNG KẺ CHUẨN 100% ĐỘ RỘNG DISCORD (37 KÝ TỰ NẾT LIỀN `─`)
+        // Giúp kéo Embed 2 mở rộng full chiều ngang 100% bằng phẳng đét với Embed Ảnh ở trên
+        const divider = '─────────────────────────────────────';
+
+        // Xử lý đoạn văn bản ở giữa (nếu không điền sẽ tự động bỏ qua)
         let middleSection = '';
         if (inputMiddleText && inputMiddleText.trim().length > 0) {
-            middleSection = `${inputMiddleText.trim()}\n`;
+            middleSection = `\n${inputMiddleText.trim()}\n`;
         }
 
-        // EMBED 2: Nội dung chi tiết - Dùng Discord Native Horizontal Divider (\n\n---\n\n)
+        // EMBED 2: Nội dung chi tiết - Căn chỉnh chuẩn 100% UI
         const contentEmbed = new EmbedBuilder()
             .setColor(0x2b2d31)
             .setDescription(
-                `\n---\n\n` +
+                `${divider}\n\n` +
                 `**Status:** ${inputStatus}\n` +
                 `**Time:** <t:${currentTimestamp}:F>\n` +
                 `**Version:** \`${inputVersion}\`\n` +
-                `**Roblox Version:** \`${inputRobloxVersion}\`\n\n` +
-                `${middleSection}` +
-                `\n---\n\n` +
+                `**Roblox Version:** \`${inputRobloxVersion}\`\n` +
+                `${middleSection}\n` +
+                `${divider}\n\n` +
                 `**Changelog:**\n` +
                 `${formattedChangelog}\n\n` +
                 `${inputNote}`
@@ -671,7 +675,7 @@ client.on('interactionCreate', async interaction => {
             embeds: [bannerEmbed, contentEmbed]
         };
 
-        // Gắn nút Download ↗ khi có điền ô link
+        // Nút Link Download tự hiện khi điền option link
         if (inputLink) {
             const downloadButton = new ButtonBuilder()
                 .setLabel('Download')
