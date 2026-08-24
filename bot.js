@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder } = require('discord.js');
+const { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const http = require('http');
 
 // --- CỔNG WEB GIẢ ĐỂ RENDER CHẠY 24/7 FREE ---
@@ -224,7 +224,28 @@ const commands = [
         .addStringOption(option => 
             option.setName('note')
                 .setDescription('Ghi chú thêm / Mô tả chi tiết')
-                .setRequired(false))
+                .setRequired(false)),
+
+    // Lệnh 8: Gửi bảng thông báo Update
+    new SlashCommandBuilder()
+        .setName('update')
+        .setDescription('Gửi bảng thông báo cập nhật (Update)'),
+
+    // Lệnh 9: Thay đổi trạng thái Online/Offline của bot
+    new SlashCommandBuilder()
+        .setName('online')
+        .setDescription('Thay đổi trạng thái hiển thị của bot')
+        .addStringOption(option =>
+            option.setName('trang_thai')
+                .setDescription('Chọn trạng thái hiển thị cho bot')
+                .setRequired(true)
+                .addChoices(
+                    { name: '🟢 Online (Trực tuyến)', value: 'online' },
+                    { name: '🟡 Đang chờ (Idle)', value: 'idle' },
+                    { name: '🔴 Không làm phiền (DND)', value: 'dnd' },
+                    { name: '⚪ Vô hình (Offline)', value: 'invisible' }
+                )
+        )
 ].map(command => command.toJSON());
 
 const rest = new REST({ version: '10' }).setToken(TOKEN);
@@ -233,7 +254,7 @@ client.once('ready', async () => {
     console.log(`=> Bot executorbotbyhuy đã online thành công: ${client.user.tag}`);
     try {
         await rest.put(Routes.applicationCommands(CLIENT_ID), { body: commands });
-        console.log('=> Đã cập nhật xong tất cả các lệnh (/status, /add, /delete, /change, /settitle, /setsubtitle, /banwave)!');
+        console.log('=> Đã cập nhật xong tất cả các lệnh (/status, /add, /delete, /change, /settitle, /setsubtitle, /banwave, /update, /online)!');
     } catch (error) {
         console.error(error);
     }
@@ -667,6 +688,45 @@ client.on('interactionCreate', async interaction => {
             console.error(err);
             await interaction.editReply(`❌ Lỗi kết nối cơ sở dữ liệu Banwave!`);
         }
+    }
+
+    // --- XỬ LÝ LỆNH /update (GỬI BẢNG THÔNG BÁO UPDATE - KHÔNG CÓ NÚT) ---
+    if (commandName === 'update') {
+        const updateEmbed = new EmbedBuilder()
+            .setColor(0x2b2d31)
+            .setImage('https://i.ibb.co/W4ZBm7kq/Update.png')
+            .setDescription(
+                `**Status:** 🟢\n` +
+                `**Time:** <t:${Math.floor(Date.now() / 1000)}:F>\n` +
+                `**Version:** \`2.1.2\`\n` +
+                `**Roblox Version:**\n` +
+                `\`version-ddf602d9cfe44005\`\n\n` +
+                `.\n` +
+                `-----------------------------------\n` +
+                `**Changelog:**\n` +
+                `• Uploaded the Injector as UI 💀\n\n` +
+                `Please restart Real to apply the changes or download.`
+            );
+
+        await interaction.reply({ embeds: [updateEmbed] });
+    }
+
+    // --- XỬ LÝ LỆNH /online (ĐỔI TRẠNG THÁI HIỂN THỊ CỦA BOT) ---
+    if (commandName === 'online') {
+        const selectedStatus = interaction.options.getString('trang_thai');
+        client.user.setPresence({ status: selectedStatus });
+
+        const statusText = {
+            online: '🟢 Online (Trực tuyến)',
+            idle: '🟡 Đang chờ (Idle)',
+            dnd: '🔴 Không làm phiền (DND)',
+            invisible: '⚪ Vô hình (Invisible/Offline)'
+        };
+
+        await interaction.reply({ 
+            content: `Đã đổi trạng thái bot thành: **${statusText[selectedStatus]}**`, 
+            ephemeral: true 
+        });
     }
 });
 
