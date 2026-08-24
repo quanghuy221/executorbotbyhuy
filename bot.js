@@ -258,11 +258,11 @@ const commands = [
                 .setRequired(true))
         .addStringOption(option =>
             option.setName('middle_text')
-                .setDescription('Nội dung ở giữa (Mặc định: -)')
+                .setDescription('Nội dung ở giữa (Mặc định: .)')
                 .setRequired(false))
         .addStringOption(option =>
             option.setName('note')
-                .setDescription('Ghi chú dòng cuối (Mặc định: Please restart Real to apply changes...)')
+                .setDescription('Ghi chú dòng cuối (Mặc định: Please restart...)')
                 .setRequired(false))
         .addStringOption(option =>
             option.setName('link')
@@ -510,7 +510,7 @@ client.on('interactionCreate', async interaction => {
                 const nameMatch = item.name.trim().toLowerCase() === targetName.toLowerCase();
                 if (!nameMatch) return false;
                 if (targetPlat) {
-                    return (item.plat || '').trim().toLowerCase() !== targetPlat.toLowerCase();
+                    return (item.plat || '').trim().toLowerCase() === targetPlat.toLowerCase();
                 }
                 return true;
             });
@@ -645,24 +645,28 @@ client.on('interactionCreate', async interaction => {
             .setColor(0x2b2d31)
             .setImage('https://i.ibb.co/W4ZBm7kq/Update.png');
 
-        // Xử lý nội dung giữa (nếu không nhập thì mặc định là '-')
+        // Xử lý dòng nội dung giữa
         let middleSection = '';
         if (inputMiddleText && inputMiddleText.trim().length > 0) {
             middleSection = `${inputMiddleText.trim()}\n`;
         } else {
-            middleSection = `-\n`;
+            middleSection = `.\n`;
         }
 
-        // EMBED 2: Nội dung thông tin với đường gạch ngang thẳng tắp chuẩn 100%
+        // Đường gạch chuẩn 40 ký tự ép khung dãn full 100% khớp bằng banner
+        const dividerLine = '────────────────────────────────────────';
+
+        // EMBED 2: Nội dung chi tiết chuẩn Real 100%
         const contentEmbed = new EmbedBuilder()
             .setColor(0x2b2d31)
             .setDescription(
+                `${dividerLine}\n` +
                 `**Status:** ${inputStatus}\n` +
                 `**Time:** <t:${currentTimestamp}:F>\n` +
                 `**Version:** \`${inputVersion}\`\n` +
                 `**Roblox Version:** \`${inputRobloxVersion}\`\n\n` +
                 `${middleSection}` +
-                `───────────────────────────────\n` +
+                `${dividerLine}\n` +
                 `**Changelog:**\n` +
                 `${formattedChangelog}\n\n` +
                 `${inputNote}`
@@ -672,7 +676,7 @@ client.on('interactionCreate', async interaction => {
             embeds: [bannerEmbed, contentEmbed]
         };
 
-        // Khi có điền ô `link`, tự tạo Nút Download ↗ gắn vào dướiEmbed
+        // Khi có điền link, tạo Nút Download ↗
         if (inputLink) {
             const downloadButton = new ButtonBuilder()
                 .setLabel('Download')
