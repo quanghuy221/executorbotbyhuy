@@ -236,7 +236,7 @@ const commands = [
                 .setDescription('Ghi chú thêm / Mô tả chi tiết')
                 .setRequired(false)),
 
-    // Lệnh 8: Gửi bảng thông báo Update (Chuẩn UI 100% Sạch Gạch - Full Width)
+    // Lệnh 8: Gửi bảng thông báo Update (Chuẩn UI Real 100%)
     new SlashCommandBuilder()
         .setName('update')
         .setDescription('Gửi bảng thông báo cập nhật (Style Real chuẩn 100%)')
@@ -262,7 +262,7 @@ const commands = [
                 .setRequired(false))
         .addStringOption(option =>
             option.setName('note')
-                .setDescription('Ghi chú dòng cuối (Mặc định: Restart)')
+                .setDescription('Ghi chú dòng cuối (Mặc định: Please restart Real...)')
                 .setRequired(false))
         .addStringOption(option =>
             option.setName('link')
@@ -620,14 +620,14 @@ client.on('interactionCreate', async interaction => {
         }
     }
 
-    // --- XỬ LÝ LỆNH /update ---
+    // --- XỬ LÝ LỆNH /update (Y HỆT MẪU REAL BOT 100%) ---
     if (commandName === 'update') {
         const inputStatus = interaction.options.getString('status');
         const inputVersion = interaction.options.getString('version');
         const inputRobloxVersion = interaction.options.getString('roblox_version');
         const rawChangelog = interaction.options.getString('changelog');
         const inputMiddleText = interaction.options.getString('middle_text');
-        const inputNote = interaction.options.getString('note') || 'Restart';
+        const inputNote = interaction.options.getString('note') || 'Please restart Real to apply the changes or download.';
         const inputLink = interaction.options.getString('link');
 
         // Định dạng danh sách Changelog chuẩn từng dòng với đầu chấm tròn
@@ -640,34 +640,32 @@ client.on('interactionCreate', async interaction => {
 
         const currentTimestamp = Math.floor(Date.now() / 1000);
 
-        // EMBED 1: Banner UPDATE chuẩn ở đầu
+        // EMBED 1: Banner Ảnh UPDATE ở trên cùng
         const bannerEmbed = new EmbedBuilder()
             .setColor(0x2b2d31)
             .setImage('https://i.ibb.co/W4ZBm7kq/Update.png');
 
-        // KÝ TỰ VÔ HÌNH HỆ THỐNG (BRAILLE BLANK) - ÉP EMBED GIÃN 100% BẰNG BANNER MÀ KHÔNG CÓ GẠCH XẤU
-        const invisibleSpacer = '⠀'.repeat(45);
+        // Tạo chuỗi nội dung với đường kẻ chìm Markdown chuẩn Discord (`---`)
+        let descriptionContent = 
+            `**Status:** ${inputStatus}\n` +
+            `**Time:** <t:${currentTimestamp}:F>\n` +
+            `**Version:** \`${inputVersion}\`\n` +
+            `**Roblox Version:** \`${inputRobloxVersion}\`\n\n` +
+            `---`;
 
-        // Xử lý đoạn văn bản ở giữa (nếu điền thì hiện, không điền thì cách dòng nhẹ)
-        let middleSection = '\n';
         if (inputMiddleText && inputMiddleText.trim().length > 0) {
-            middleSection = `\n${inputMiddleText.trim()}\n\n`;
+            descriptionContent += `\n${inputMiddleText.trim()}\n---`;
         }
 
-        // EMBED 2: Nội dung chi tiết - Sạch sẽ, không dính bất kỳ đường gạch nào
+        descriptionContent += 
+            `\n\n**Changelog:**\n` +
+            `${formattedChangelog}\n\n` +
+            `${inputNote}`;
+
+        // EMBED 2: Nội dung chi tiết chuẩn Real
         const contentEmbed = new EmbedBuilder()
             .setColor(0x2b2d31)
-            .setDescription(
-                `${invisibleSpacer}\n` +
-                `**Status:** ${inputStatus}\n` +
-                `**Time:** <t:${currentTimestamp}:F>\n` +
-                `**Version:** \`${inputVersion}\`\n` +
-                `**Roblox Version:** \`${inputRobloxVersion}\`\n` +
-                `${middleSection}` +
-                `**Changelog:**\n` +
-                `${formattedChangelog}\n\n` +
-                `${inputNote}`
-            );
+            .setDescription(descriptionContent);
 
         const responseOptions = {
             embeds: [bannerEmbed, contentEmbed]
