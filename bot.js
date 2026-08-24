@@ -258,7 +258,7 @@ const commands = [
                 .setRequired(true))
         .addStringOption(option =>
             option.setName('middle_text')
-                .setDescription('Nội dung ở giữa (Mặc định: .)')
+                .setDescription('Nội dung văn bản ở giữa (Nếu không nhập sẽ bỏ qua)')
                 .setRequired(false))
         .addStringOption(option =>
             option.setName('note')
@@ -510,7 +510,7 @@ client.on('interactionCreate', async interaction => {
                 const nameMatch = item.name.trim().toLowerCase() === targetName.toLowerCase();
                 if (!nameMatch) return false;
                 if (targetPlat) {
-                    return (item.plat || '').trim().toLowerCase() === targetPlat.toLowerCase();
+                    return (item.plat || '').trim().toLowerCase() !== targetPlat.toLowerCase();
                 }
                 return true;
             });
@@ -630,7 +630,7 @@ client.on('interactionCreate', async interaction => {
         const inputNote = interaction.options.getString('note') || 'Please restart Real to apply the changes or download.';
         const inputLink = interaction.options.getString('link');
 
-        // Phân tách câu Changelog theo dấu | hoặc xuống dòng
+        // Định dạng danh sách Changelog chuẩn từng dòng với đầu chấm tròn
         const formattedChangelog = rawChangelog
             .split(/\||\n/)
             .map(item => item.trim())
@@ -640,33 +640,28 @@ client.on('interactionCreate', async interaction => {
 
         const currentTimestamp = Math.floor(Date.now() / 1000);
 
-        // EMBED 1: Banner UPDATE ở đầu
+        // EMBED 1: Banner UPDATE chuẩn ở đầu
         const bannerEmbed = new EmbedBuilder()
             .setColor(0x2b2d31)
             .setImage('https://i.ibb.co/W4ZBm7kq/Update.png');
 
-        // Xử lý dòng nội dung giữa
+        // Xử lý dòng nội dung ở giữa (nếu không nhập thì bỏ qua sạch sẽ)
         let middleSection = '';
         if (inputMiddleText && inputMiddleText.trim().length > 0) {
             middleSection = `${inputMiddleText.trim()}\n`;
-        } else {
-            middleSection = `.\n`;
         }
 
-        // Đường gạch chuẩn 40 ký tự ép khung dãn full 100% khớp bằng banner
-        const dividerLine = '────────────────────────────────────────';
-
-        // EMBED 2: Nội dung chi tiết chuẩn Real 100%
+        // EMBED 2: Nội dung chi tiết - Dùng Discord Native Horizontal Divider (\n\n---\n\n)
         const contentEmbed = new EmbedBuilder()
             .setColor(0x2b2d31)
             .setDescription(
-                `${dividerLine}\n` +
+                `\n---\n\n` +
                 `**Status:** ${inputStatus}\n` +
                 `**Time:** <t:${currentTimestamp}:F>\n` +
                 `**Version:** \`${inputVersion}\`\n` +
                 `**Roblox Version:** \`${inputRobloxVersion}\`\n\n` +
                 `${middleSection}` +
-                `${dividerLine}\n` +
+                `\n---\n\n` +
                 `**Changelog:**\n` +
                 `${formattedChangelog}\n\n` +
                 `${inputNote}`
@@ -676,7 +671,7 @@ client.on('interactionCreate', async interaction => {
             embeds: [bannerEmbed, contentEmbed]
         };
 
-        // Khi có điền link, tạo Nút Download ↗
+        // Gắn nút Download ↗ khi có điền ô link
         if (inputLink) {
             const downloadButton = new ButtonBuilder()
                 .setLabel('Download')
