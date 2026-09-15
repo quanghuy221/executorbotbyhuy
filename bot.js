@@ -283,7 +283,16 @@ const commands = [
                     { name: '🔴 Không làm phiền (DND)', value: 'dnd' },
                     { name: '⚪ Vô hình (Offline)', value: 'invisible' }
                 )
-        )
+        ),
+
+    // Lệnh 10: Trò chuyện với Bot
+    new SlashCommandBuilder()
+        .setName('chat')
+        .setDescription('Trò chuyện hoặc gửi nội dung cho bot')
+        .addStringOption(option =>
+            option.setName('noi_dung')
+                .setDescription('Nhập nội dung bạn muốn trò chuyện')
+                .setRequired(true))
 ].map(command => command.toJSON());
 
 const rest = new REST({ version: '10' }).setToken(TOKEN);
@@ -689,6 +698,19 @@ client.on('interactionCreate', async interaction => {
         const selectedStatus = interaction.options.getString('trang_thai');
         client.user.setPresence({ status: selectedStatus });
         await interaction.reply({ content: `Đã đổi trạng thái bot thành: **${selectedStatus}**`, ephemeral: true });
+    }
+
+    // --- XỬ LÝ LỆNH /chat ---
+    if (commandName === 'chat') {
+        const messageContent = interaction.options.getString('noi_dung');
+        await interaction.deferReply();
+
+        try {
+            await interaction.editReply(`💬 **${interaction.user.username}:** ${messageContent}\n🤖 **Bot:** Chào bạn! Tôi đã nhận được tin nhắn: "${messageContent}".`);
+        } catch (err) {
+            console.error(err);
+            await interaction.editReply(`❌ Có lỗi xảy ra khi xử lý phản hồi!`);
+        }
     }
 });
 
